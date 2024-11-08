@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Copy, AlertCircle, Plus, Trash2 } from 'lucide-react';
 
 interface ButtonItem {
