@@ -1,16 +1,5 @@
-import  { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Copy, AlertCircle, Plus, Trash2 } from 'lucide-react';
-import Prism from 'prismjs';
-
-
-// Import Prism languages and styles
-import 'prismjs/components/prism-bash';
-import 'prismjs/components/prism-csharp';
-import 'prismjs/components/prism-python';
-import 'prismjs/components/prism-go';
-import 'prismjs/components/prism-javascript';
-import 'prismjs/components/prism-php';
-import 'prismjs/themes/prism.css';
 
 interface RequestCode {
   language: string;
@@ -18,19 +7,7 @@ interface RequestCode {
   id: string;
 }
 
-interface LanguageConfig {
-  name: string;
-  prismLanguage: string;
-}
-
-const LANGUAGE_CONFIGS: Record<string, LanguageConfig> = {
-  'cURL': { name: 'cURL', prismLanguage: 'bash' },
-  'C#': { name: 'C#', prismLanguage: 'csharp' },
-  'Python': { name: 'Python', prismLanguage: 'python' },
-  'Go': { name: 'Go', prismLanguage: 'go' },
-  'Node.js': { name: 'Node.js', prismLanguage: 'javascript' },
-  'PHP': { name: 'PHP', prismLanguage: 'php' }
-};
+const LANGUAGES = ['cURL', 'C#', 'Python', 'Go', 'Node.js', 'PHP'];
 
 const RequestResponseGenerator = () => {
   const [method, setMethod] = useState('GET');
@@ -39,57 +16,8 @@ const RequestResponseGenerator = () => {
   ]);
   const [response, setResponse] = useState('');
   const [copied, setCopied] = useState(false);
-  const [highlightedCode, setHighlightedCode] = useState<Record<string, string>>({});
 
   const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
-  const languages = Object.keys(LANGUAGE_CONFIGS);
-
-  useEffect(() => {
-    // Highlight all code blocks whenever they change
-    requests.forEach(request => {
-      if (request.code) {
-        const language = LANGUAGE_CONFIGS[request.language].prismLanguage;
-        const highlighted = Prism.highlight(
-          request.code,
-          Prism.languages[language],
-          language
-        );
-        setHighlightedCode(prev => ({
-          ...prev,
-          [request.id]: highlighted
-        }));
-      }
-    });
-
-    // Highlight response as JSON
-    if (response) {
-      try {
-        // Try to parse and format JSON
-        const parsedJson = JSON.parse(response);
-        const prettyResponse = JSON.stringify(parsedJson, null, 2);
-        const highlighted = Prism.highlight(
-          prettyResponse,
-          Prism.languages.javascript,
-          'javascript'
-        );
-        setHighlightedCode(prev => ({
-          ...prev,
-          response: highlighted
-        }));
-      } catch (error) {
-        // If JSON parsing fails, still try to highlight it
-        const highlighted = Prism.highlight(
-          response,
-          Prism.languages.javascript,
-          'javascript'
-        );
-        setHighlightedCode(prev => ({
-          ...prev,
-          response: highlighted
-        }));
-      }
-    }
-  }, [requests, response]);
 
   const stringifyCode = (code: string): string => {
     return code
@@ -107,11 +35,6 @@ const RequestResponseGenerator = () => {
   const removeRequestBlock = (id: string) => {
     if (requests.length === 1) return;
     setRequests(requests.filter(req => req.id !== id));
-    setHighlightedCode(prev => {
-      const newHighlighted = { ...prev };
-      delete newHighlighted[id];
-      return newHighlighted;
-    });
   };
 
   const updateRequest = (id: string, field: keyof RequestCode, value: string) => {
@@ -189,7 +112,7 @@ const RequestResponseGenerator = () => {
                     onChange={(e) => updateRequest(request.id, 'language', e.target.value)}
                     className="p-2 border rounded-md bg-white"
                   >
-                    {languages.map((lang) => (
+                    {LANGUAGES.map((lang) => (
                       <option key={lang} value={lang}>{lang}</option>
                     ))}
                   </select>
@@ -203,22 +126,14 @@ const RequestResponseGenerator = () => {
                   </button>
                 </div>
 
-                <div className="relative font-mono">
+                <div className="relative">
                   <textarea
                     value={request.code}
                     onChange={(e) => updateRequest(request.id, 'code', e.target.value)}
                     placeholder={`Paste your formatted ${request.language} code here...`}
-                    className="w-full h-48 p-3 text-sm border rounded-md bg-white resize-none"
+                    className="w-full h-48 p-3 font-mono text-sm border rounded-md bg-white resize-none"
                     spellCheck={false}
                   />
-                  {request.code && (
-                    <div 
-                      className="absolute top-0 left-0 w-full h-48 pointer-events-none p-3 text-sm overflow-auto"
-                      dangerouslySetInnerHTML={{ 
-                        __html: highlightedCode[request.id] || request.code 
-                      }}
-                    />
-                  )}
                 </div>
                 {!request.code && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -234,22 +149,14 @@ const RequestResponseGenerator = () => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Response
             </label>
-            <div className="relative font-mono">
+            <div className="relative">
               <textarea
                 value={response}
                 onChange={(e) => setResponse(e.target.value)}
                 placeholder="Paste your formatted JSON response here..."
-                className="w-full h-48 p-3 text-sm border rounded-md resize-none"
+                className="w-full h-48 p-3 font-mono text-sm border rounded-md bg-white resize-none"
                 spellCheck={false}
               />
-              {response && (
-                <div 
-                  className="absolute top-0 left-0 w-full h-48 pointer-events-none p-3 text-sm overflow-auto"
-                  dangerouslySetInnerHTML={{ 
-                    __html: highlightedCode.response || response 
-                  }}
-                />
-              )}
             </div>
             {!response && (
               <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
@@ -283,10 +190,10 @@ const RequestResponseGenerator = () => {
         <div className="text-sm text-gray-500">
           <p>Notes:</p>
           <ul className="list-disc list-inside space-y-1">
-            <li>Syntax highlighting is automatically applied based on the selected language</li>
-            <li>JSON response is automatically highlighted</li>
-            <li>You can add multiple code blocks with different languages</li>
+            <li>Add multiple code blocks with different languages</li>
+            <li>Paste your code directly - the generator will handle formatting</li>
             <li>All fields must be filled before copying</li>
+            <li>Click the copy button to copy the generated code</li>
           </ul>
         </div>
       </div>
